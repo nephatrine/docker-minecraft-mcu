@@ -80,6 +80,7 @@ directories listed below.
 - ``/mnt/config/www/minecraft/modpack/optional/*``: Optional Mods. [*]
 - ``/mnt/config/www/minecraft/modpack/scripts/*``: Minecraft Tweaking Scripts. [*]
 - ``/mnt/config/www/minecraft/modpack/server/*``: Server-Side Optional Mods. [*]
+- ``/mnt/config/www/minecraft/modpack.xsl``: MCUpdater Modpack Theming. [*]
 
 **[*] Changes to some configuration files may require service restart to take
 immediate effect.**

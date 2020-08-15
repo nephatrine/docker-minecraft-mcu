@@ -1,7 +1,7 @@
 #!/usr/bin/with-contenv bash
 
 SERVER_NAME=${SERVER_NAME:-"custom"}
-SERVER_PUBLIC=${MINECRAFT_IP:-"$(wget -q -O- https://myip.dnsomatic.com/)"}
+SERVER_PUBLIC=${SERVER_PUBLIC:-"$(wget -q -O- https://myip.dnsomatic.com/)"}
 
 MODPACK_NAME=${MODPACK_NAME:-"${SERVER_NAME}"}
 MODPACK_PUBLIC=${MODPACK_PUBLIC:-"https://${SERVER_PUBLIC}"}
@@ -217,18 +217,26 @@ fi
 
 unset FASTPACK_PARAMS
 if [[ ! -z "${FORGE_VERSION}" ]]; then
-  FASTPACK_PARAMS="${FASTPACK_PARAMS} --forge ${MINECRAFT_VERSION}-${FORGE_VERSION}"
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --forge \"${MINECRAFT_VERSION}-${FORGE_VERSION}\""
 elif [[ ! -z "${FABRIC_VERSION}" ]]; then
-  FASTPACK_PARAMS="${FASTPACK_PARAMS} --fabric ${FABRIC_VERSION}"
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --fabric \"${FABRIC_VERSION}\""
+fi
+if [[ -e /mnt/config/www/minecraft/modpack.xsl ]]; then
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --xslt \"${MODPACK_PUBLIC}/modpack.xsl\""
+fi
+if [[ -e /mnt/config/www/minecraft/index.html ]]; then
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --newsURL \"${MODPACK_PUBLIC}/index.html\""
+else
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --newsURL \"${MODPACK_PUBLIC}/modpack.xml\""
 fi
 
 if [[ ! -z "${MINECRAFT_VERSION}" ]]; then
   cd /mnt/config/log
   s6-setuidgid guardian java -jar /mnt/config/bin/MCU-FastPack-latest.jar \
    --mcserver "${SERVER_PUBLIC}" --name "${SERVER_NAME}" \
-   --baseURL "${MODPACK_PUBLIC}/" --id "${MODPACK_NAME}" \
-   --newsURL "${MODPACK_PUBLIC}/modpack.xml" --xslt "${MODPACK_PUBLIC}/modpack.xsl" \
+   --baseURL "${MODPACK_PUBLIC}/modpack/" --id "${MODPACK_NAME}" \
    --out "/mnt/config/www/minecraft/modpack.xml" --path "/mnt/config/www/minecraft/modpack" \
    --mc "${MINECRAFT_VERSION}"${FASTPACK_PARAMS} \
    --revision "$(date +'%F_%H%M')" --autoConnect false
+  sed -i 's/+/%2B/g' /mnt/config/www/minecraft/modpack.xml
 fi
