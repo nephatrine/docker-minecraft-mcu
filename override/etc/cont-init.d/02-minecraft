@@ -217,17 +217,17 @@ fi
 
 unset FASTPACK_PARAMS
 if [[ ! -z "${FORGE_VERSION}" ]]; then
-  FASTPACK_PARAMS="${FASTPACK_PARAMS} --forge \"${MINECRAFT_VERSION}-${FORGE_VERSION}\""
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --forge ${MINECRAFT_VERSION}-${FORGE_VERSION}"
 elif [[ ! -z "${FABRIC_VERSION}" ]]; then
-  FASTPACK_PARAMS="${FASTPACK_PARAMS} --fabric \"${FABRIC_VERSION}\""
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --fabric ${FABRIC_VERSION}"
 fi
 if [[ -e /mnt/config/www/minecraft/modpack.xsl ]]; then
-  FASTPACK_PARAMS="${FASTPACK_PARAMS} --xslt \"${MODPACK_PUBLIC}/modpack.xsl\""
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --xslt ${MODPACK_PUBLIC}/modpack.xsl"
 fi
 if [[ -e /mnt/config/www/minecraft/index.html ]]; then
-  FASTPACK_PARAMS="${FASTPACK_PARAMS} --newsURL \"${MODPACK_PUBLIC}/index.html\""
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --newsURL ${MODPACK_PUBLIC}/index.html"
 else
-  FASTPACK_PARAMS="${FASTPACK_PARAMS} --newsURL \"${MODPACK_PUBLIC}/modpack.xml\""
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --newsURL ${MODPACK_PUBLIC}/modpack.xml"
 fi
 
 if [[ ! -z "${MINECRAFT_VERSION}" ]]; then
