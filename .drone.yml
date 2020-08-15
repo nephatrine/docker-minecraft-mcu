@@ -1,0 +1,47 @@
+---
+kind: pipeline
+type: exec
+name: default
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: build
+  commands:
+  - docker build --pull -t pdr.nephatrine.net/nephatrine/minecraft-mcu:latest .
+  - HOME=/mnt/config/home docker push pdr.nephatrine.net/nephatrine/minecraft-mcu:latest
+  - docker tag pdr.nephatrine.net/nephatrine/minecraft-mcu:latest nephatrine/minecraft-mcu:latest
+  - HOME=/mnt/config/home docker push nephatrine/minecraft-mcu:latest
+  - docker rmi pdr.nephatrine.net/nephatrine/minecraft-mcu:latest
+
+---
+kind: pipeline
+name: after
+
+steps:
+- name: notify
+  image: appleboy/drone-discord
+  settings:
+    avatar_url: https://files.nephatrine.net/Images/Buttons/Drone.png
+    message: "Automated build of **{{repo.name}}:{{commit.branch}}** has returned [{{build.status}}]({{build.link}})."
+    username: DroneCI
+    webhook_id:
+      from_secret: wh-minecraft-id
+    webhook_token:
+      from_secret: wh-minecraft-tok
+
+depends_on:
+- default
+
+trigger:
+  status:
+  - success
+  - failure
+
+---
+kind: signature
+hmac: 2379a3a4f13192dd160e1a104185bd49b76b79e82d8ab0c1b3cce42cd77cedc4
+
+...

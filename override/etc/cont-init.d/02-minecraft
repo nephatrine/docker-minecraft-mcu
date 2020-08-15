@@ -1,0 +1,234 @@
+#!/usr/bin/with-contenv bash
+
+SERVER_NAME=${SERVER_NAME:-"custom"}
+SERVER_PUBLIC=${MINECRAFT_IP:-"$(wget -q -O- https://myip.dnsomatic.com/)"}
+
+MODPACK_NAME=${MODPACK_NAME:-"${SERVER_NAME}"}
+MODPACK_PUBLIC=${MODPACK_PUBLIC:-"https://${SERVER_PUBLIC}"}
+
+# === Forge Loader Version ===
+
+if [[ -e /mnt/config/etc/forge/promotions.json ]]; then
+  find /mnt/config/etc/forge/promotions.json -mtime +1 -delete
+fi
+if [[ ! -e /mnt/config/etc/forge/promotions.json ]]; then
+  if [[ ! -d /mnt/config/etc/forge ]]; then
+    s6-setuidgid guardian mkdir -p /mnt/config/etc/forge
+  fi
+  s6-setuidgid guardian wget -P /mnt/config/etc/forge "https://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions.json"
+fi
+
+if [[ -z "${FABRIC_VERSION}" && -z "${FABRIC_INSTALLER_VERSION}" ]]; then
+  FORGE_VERSION=${FORGE_VERSION:-"recommended"}
+fi
+if [[ ! -z "${MINECRAFT_VERSION}" && ! -z "${FORGE_VERSION}" ]]; then
+  if ! printf "$FORGE_VERSION" | grep -q [0-9]; then
+    FORGE_VERSION=$(jq -r --arg ver "$MINECRAFT_VERSION-$FORGE_VERSION" '.promos[$ver].version' </mnt/config/etc/forge/promotions.json)
+  fi
+else
+  unset FORGE_VERSION
+fi
+if [[ ! -z "${FORGE_VERSION}" ]]; then
+  if ! printf "$FORGE_VERSION" | grep -q [0-9]; then
+    unset FORGE_VERSION
+  fi
+fi
+
+# === Fabric Installer Version ===
+
+if [[ -e /mnt/config/etc/fabric-installer/maven-metadata.xml ]]; then
+  find /mnt/config/etc/fabric-installer/maven-metadata.xml -mtime +1 -delete
+fi
+if [[ ! -e /mnt/config/etc/fabric-installer/maven-metadata.xml ]]; then
+  if [[ ! -d /mnt/config/etc/fabric-installer ]]; then
+    s6-setuidgid guardian mkdir -p /mnt/config/etc/fabric-installer
+  fi
+  s6-setuidgid guardian wget -P /mnt/config/etc/fabric-installer "https://maven.fabricmc.net/net/fabricmc/fabric-installer/maven-metadata.xml"
+fi
+
+FABRIC_INSTALLER_VERSION=${FABRIC_INSTALLER_VERSION:-"release"}
+if ! printf "$FABRIC_INSTALLER_VERSION" | grep -q [0-9]; then
+  FABRIC_INSTALLER_VERSION=$(xmllint --xpath "metadata/versioning/${FABRIC_INSTALLER_VERSION}/text()" /mnt/config/etc/fabric-installer/maven-metadata.xml)
+fi
+
+# === Fabric Loader Version ===
+
+if [[ -e /mnt/config/etc/fabric-loader/maven-metadata.xml ]]; then
+  find /mnt/config/etc/fabric-loader/maven-metadata.xml -mtime +1 -delete
+fi
+if [[ ! -e /mnt/config/etc/fabric-loader/maven-metadata.xml ]]; then
+  if [[ ! -d /mnt/config/etc/fabric-loader ]]; then
+    s6-setuidgid guardian mkdir -p /mnt/config/etc/fabric-loader
+  fi
+  s6-setuidgid guardian wget -P /mnt/config/etc/fabric-loader "https://maven.fabricmc.net/net/fabricmc/fabric-loader/maven-metadata.xml"
+fi
+
+if [[ -z "${FORGE_VERSION}" ]]; then
+  FABRIC_VERSION=${FABRIC_VERSION:-"release"}
+fi
+if [[ ! -z "${FABRIC_VERSION}" ]]; then
+  if ! printf "$FABRIC_VERSION" | grep -q [0-9]; then
+    FABRIC_VERSION=$(xmllint --xpath "metadata/versioning/${FABRIC_VERSION}/text()" /mnt/config/etc/fabric-loader/maven-metadata.xml)
+  fi
+fi
+
+# === Download MCUpdater ===
+
+if [[ ! -e /mnt/config/bin/MCU-FastPack-latest.jar ]]; then
+  if [[ ! -d /mnt/config/bin ]]; then
+    s6-setuidgid guardian mkdir -p /mnt/config/bin
+  fi
+  s6-setuidgid guardian wget -P /mnt/config/bin "https://files.mcupdater.com/MCU-FastPack-latest.jar"
+fi
+
+if [[ ! -e /mnt/config/www/minecraft/MCUpdater-latest.jar ]]; then
+  if [[ ! -d /mnt/config/www/minecraft ]]; then
+    s6-setuidgid guardian mkdir -p /mnt/config/www/minecraft
+  fi
+  s6-setuidgid guardian wget -P /mnt/config/www/minecraft "https://files.mcupdater.com/MCUpdater-latest.jar"
+fi
+
+if [[ ! -e /mnt/config/www/minecraft/modpack.xsl ]]; then
+  if [[ ! -d /mnt/config/www/minecraft ]]; then
+    s6-setuidgid guardian mkdir -p /mnt/config/www/minecraft
+  fi
+  s6-setuidgid guardian wget -O /mnt/config/www/minecraft/modpack.xsl "https://raw.githubusercontent.com/MCUpdater/pack-optional/master/ServerPack.xsl"
+fi
+
+# === Download Mod Loader ===
+
+if [[ ! -d /mnt/config/data/server ]]; then
+  s6-setuidgid guardian mkdir -p /mnt/config/data/server
+fi
+if [[ -d /mnt/config/data/server/mods ]]; then
+  rm -rf /mnt/config/data/server/mods
+fi
+if [[ -d /mnt/config/data/server/scripts ]]; then
+  rm -rf /mnt/config/data/server/scripts
+fi
+find /mnt/config/data/server -type l -delete
+
+if [[ ! -z "${FORGE_VERSION}" ]]; then
+  if [[ ! -e /mnt/config/bin/forge-${MINECRAFT_VERSION}-${FORGE_VERSION}-installer.jar ]]; then
+    if [[ ! -d /mnt/config/bin ]]; then
+      s6-setuidgid guardian mkdir -p /mnt/config/bin
+    fi
+    s6-setuidgid guardian wget -P /mnt/config/bin "https://files.minecraftforge.net/maven/net/minecraftforge/forge/${MINECRAFT_VERSION}-${FORGE_VERSION}/forge-${MINECRAFT_VERSION}-${FORGE_VERSION}-installer.jar" || s6-setuidgid guardian wget -O /mnt/config/bin/forge-${MINECRAFT_VERSION}-${FORGE_VERSION}-installer.jar "https://files.minecraftforge.net/maven/net/minecraftforge/forge/${MINECRAFT_VERSION}-${FORGE_VERSION}-${MINECRAFT_VERSION}/forge-${MINECRAFT_VERSION}-${FORGE_VERSION}-${MINECRAFT_VERSION}-installer.jar"
+  fi
+
+  LOADER_DIRNAME="${MINECRAFT_VERSION}-${FORGE_VERSION}"
+  if [[ ! -d /mnt/config/data/launcher/${LOADER_DIRNAME} ]]; then
+    s6-setuidgid guardian mkdir -p /mnt/config/data/launcher/${LOADER_DIRNAME}
+    cd /mnt/config/data/launcher/${LOADER_DIRNAME}
+    s6-setuidgid guardian java -jar /mnt/config/bin/forge-${MINECRAFT_VERSION}-${FORGE_VERSION}-installer.jar --installServer
+  fi
+
+  s6-setuidgid guardian ln -s /mnt/config/data/launcher/${LOADER_DIRNAME}/minecraft_server.${MINECRAFT_VERSION}.jar /mnt/config/data/server/server.jar
+  s6-setuidgid guardian ln -s /mnt/config/data/launcher/${LOADER_DIRNAME}/forge-${MINECRAFT_VERSION}-${FORGE_VERSION}*.jar /mnt/config/data/server/server-launcher.jar
+  s6-setuidgid guardian ln -s /mnt/config/data/launcher/${LOADER_DIRNAME}/libraries /mnt/config/data/server/libraries
+elif [[ ! -z "${FABRIC_INSTALLER_VERSION}" ]]; then
+  if [[ ! -e /mnt/config/bin/fabric-installer-${FABRIC_INSTALLER_VERSION}.jar ]]; then
+    if [[ ! -d /mnt/config/bin ]]; then
+      s6-setuidgid guardian mkdir -p /mnt/config/bin
+    fi
+    s6-setuidgid guardian wget -P /mnt/config/bin "https://maven.fabricmc.net/net/fabricmc/fabric-installer/${FABRIC_INSTALLER_VERSION}/fabric-installer-${FABRIC_INSTALLER_VERSION}.jar"
+  fi
+
+  unset LOADER_PARAMS
+  if [[ ! -z "${MINECRAFT_VERSION}" ]]; then
+    LOADER_DIRNAME="${MINECRAFT_VERSION}"
+    LOADER_PARAMS="${LOADER_PARAMS} -mcversion ${MINECRAFT_VERSION}"
+  else
+    LOADER_DIRNAME="minecraft"
+  fi
+  if [[ ! -z "${FABRIC_VERSION}" ]]; then
+    LOADER_DIRNAME="${LOADER_DIRNAME}-${FABRIC_VERSION}"
+    LOADER_PARAMS="${LOADER_PARAMS} -loader ${FABRIC_VERSION}"
+  else
+    LOADER_DIRNAME="${LOADER_DIRNAME}-latest"
+  fi
+  if [[ ! -d /mnt/config/data/launcher/${LOADER_DIRNAME} ]]; then
+    s6-setuidgid guardian mkdir -p /mnt/config/data/launcher/${LOADER_DIRNAME}
+    cd /mnt/config/data/launcher/${LOADER_DIRNAME}
+    s6-setuidgid guardian java -jar /mnt/config/bin/fabric-installer-${FABRIC_INSTALLER_VERSION}.jar server -downloadMinecraft${LOADER_PARAMS}
+  fi
+
+  s6-setuidgid guardian ln -s /mnt/config/data/launcher/${LOADER_DIRNAME}/server.jar /mnt/config/data/server/server.jar
+  s6-setuidgid guardian ln -s /mnt/config/data/launcher/${LOADER_DIRNAME}/fabric-server-launch.jar /mnt/config/data/server/server-launcher.jar
+  s6-setuidgid guardian ln -s /mnt/config/home/.cache/fabric-installer/libraries /mnt/config/data/server/libraries
+fi
+
+# === Create Symlinks ===
+
+if [[ ! -d /mnt/config/www/minecraft/modpack ]]; then
+  s6-setuidgid guardian mkdir -p /mnt/config/www/minecraft/modpack
+fi
+
+s6-setuidgid guardian mkdir -p /mnt/config/data/server/mods
+if [[ -d /mnt/config/www/minecraft/modpack/mods ]]; then
+  s6-setuidgid guardian ln -s /mnt/config/www/minecraft/modpack/mods/* /mnt/config/data/server/mods/
+fi
+if [[ -d /mnt/config/www/minecraft/modpack/optional ]]; then
+  s6-setuidgid guardian ln -s /mnt/config/www/minecraft/modpack/optional/* /mnt/config/data/server/mods/
+fi
+if [[ -d /mnt/config/www/minecraft/modpack/server ]]; then
+  s6-setuidgid guardian ln -s /mnt/config/www/minecraft/modpack/server/* /mnt/config/data/server/mods/
+fi
+if [[ -d /mnt/config/data/modpack/mods ]]; then
+  s6-setuidgid guardian ln -s /mnt/config/data/modpack/mods/* /mnt/config/data/server/mods/
+fi
+if [[ -d /mnt/config/data/modpack/optional ]]; then
+  s6-setuidgid guardian ln -s /mnt/config/data/modpack/optional/* /mnt/config/data/server/mods/
+fi
+if [[ -d /mnt/config/data/modpack/server ]]; then
+  s6-setuidgid guardian ln -s /mnt/config/data/modpack/server/* /mnt/config/data/server/mods/
+fi
+
+if [[ ! -d /mnt/config/data/server/config ]]; then
+  s6-setuidgid guardian mkdir -p /mnt/config/data/server/config
+fi
+if [[ -d /mnt/config/www/minecraft/modpack/config ]]; then
+  s6-setuidgid guardian cp -R /mnt/config/www/minecraft/modpack/config/* /mnt/config/data/server/config/
+fi
+if [[ -d /mnt/config/data/modpack/mods ]]; then
+  s6-setuidgid guardian cp -R /mnt/config/data/modpack/config/* /mnt/config/data/server/config/
+fi
+
+s6-setuidgid guardian mkdir -p /mnt/config/data/server/scripts
+if [[ -d /mnt/config/www/minecraft/modpack/scripts ]]; then
+  s6-setuidgid guardian cp -R /mnt/config/www/minecraft/modpack/scripts/* /mnt/config/data/server/scripts/
+fi
+if [[ -d /mnt/config/data/modpack/scripts ]]; then
+  s6-setuidgid guardian cp -R /mnt/config/data/modpack/scripts/* /mnt/config/data/server/scripts/
+fi
+
+cd /mnt/config/data/server
+if [[ -d /mnt/config/www/minecraft/modpack/extract ]]; then
+  s6-setuidgid guardian find /mnt/config/www/minecraft/modpack/extract/ -name '*.zip' -exec unzip {} \;
+fi
+if [[ -d /mnt/config/data/modpack/extract ]]; then
+  s6-setuidgid guardian cp -R /mnt/config/data/modpack/extract/ -name '*.zip' -exec unzip {} \;
+fi
+if [[ ! -f /mnt/config/data/server/eula.txt ]]; then
+  s6-setuidgid guardian java ${JAVA_OPTS} -jar server.jar nogui
+fi
+
+# === Create Modpack ===
+
+unset FASTPACK_PARAMS
+if [[ ! -z "${FORGE_VERSION}" ]]; then
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --forge ${MINECRAFT_VERSION}-${FORGE_VERSION}"
+elif [[ ! -z "${FABRIC_VERSION}" ]]; then
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --fabric ${FABRIC_VERSION}"
+fi
+
+if [[ ! -z "${MINECRAFT_VERSION}" ]]; then
+  cd /mnt/config/log
+  s6-setuidgid guardian java -jar /mnt/config/bin/MCU-FastPack-latest.jar \
+   --mcserver "${SERVER_PUBLIC}" --name "${SERVER_NAME}" \
+   --baseURL "${MODPACK_PUBLIC}/" --id "${MODPACK_NAME}" \
+   --newsURL "${MODPACK_PUBLIC}/modpack.xml" --xslt "${MODPACK_PUBLIC}/modpack.xsl" \
+   --out "/mnt/config/www/minecraft/modpack.xml" --path "/mnt/config/www/minecraft/modpack" \
+   --mc "${MINECRAFT_VERSION}"${FASTPACK_PARAMS} \
+   --revision "$(date +'%F_%H%M')" --autoConnect false
+fi

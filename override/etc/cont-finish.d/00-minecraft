@@ -1,0 +1,17 @@
+#!/usr/bin/with-contenv bash
+if pgrep -f minedock >/dev/null; then
+  s6-setuidgid guardian screen -S minedock -X stuff "`echo -ne \"say MINECRAFT SERVER SHUTTING DOWN!\r\"`"
+  s6-setuidgid guardian screen -S minedock -X stuff "`echo -ne \"save-all\r\"`"
+  s6-setuidgid guardian screen -S minedock -X stuff "`echo -ne \"say 5...\r\"`"
+  sleep 1
+  s6-setuidgid guardian screen -S minedock -X stuff "`echo -ne \"say 4...\r\"`"
+  sleep 1
+  s6-setuidgid guardian screen -S minedock -X stuff "`echo -ne \"say 3...\r\"`"
+  sleep 1
+  s6-setuidgid guardian screen -S minedock -X stuff "`echo -ne \"say 2...\r\"`"
+  sleep 1
+  s6-setuidgid guardian screen -S minedock -X stuff "`echo -ne \"say 1...\r\"`"
+  sleep 1
+  s6-setuidgid guardian screen -S minedock -X stuff "`echo -ne \"stop\r\"`"
+  sleep 2
+fi
