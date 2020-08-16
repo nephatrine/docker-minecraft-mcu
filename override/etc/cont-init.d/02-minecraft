@@ -206,7 +206,7 @@ fi
 if [[ -d /mnt/config/www/minecraft/modpack/config ]]; then
   s6-setuidgid guardian cp -R /mnt/config/www/minecraft/modpack/config/* /mnt/config/data/server/config/
 fi
-if [[ -d /mnt/config/data/modpack/mods ]]; then
+if [[ -d /mnt/config/data/modpack/config ]]; then
   s6-setuidgid guardian cp -R /mnt/config/data/modpack/config/* /mnt/config/data/server/config/
 fi
 
