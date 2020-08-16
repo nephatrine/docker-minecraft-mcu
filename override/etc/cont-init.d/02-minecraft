@@ -72,6 +72,22 @@ if [[ ! -z "${FABRIC_VERSION}" ]]; then
   fi
 fi
 
+# === Yarn Version ===
+
+if [[ -e /mnt/config/etc/yarn/versions.json ]]; then
+  find /mnt/config/etc/yarn/versions.json -mtime +1 -delete
+fi
+if [[ ! -e /mnt/config/etc/yarn/versions.json ]]; then
+  if [[ ! -d /mnt/config/etc/yarn ]]; then
+    s6-setuidgid guardian mkdir -p /mnt/config/etc/yarn
+  fi
+  s6-setuidgid guardian wget -P /mnt/config/etc/yarn "https://maven.fabricmc.net/net/fabricmc/yarn/versions.json"
+fi
+
+if [[ ! -z "${MINECRAFT_VERSION}" && -z "${FORGE_VERSION}" ]]; then
+  YARN_VERSION="${MINECRAFT_VERSION}+build.$(jq -r --arg ver "$MINECRAFT_VERSION" '.[$ver][-1]' </mnt/config/etc/yarn/versions.json)"
+fi
+
 # === Download MCUpdater ===
 
 if [[ ! -e /mnt/config/bin/MCU-FastPack-latest.jar ]]; then
@@ -234,9 +250,10 @@ if [[ ! -z "${MINECRAFT_VERSION}" ]]; then
   cd /mnt/config/log
   s6-setuidgid guardian java -jar /mnt/config/bin/MCU-FastPack-latest.jar \
    --mcserver "${SERVER_PUBLIC}" --name "${SERVER_NAME}" \
-   --baseURL "${MODPACK_PUBLIC}/modpack/" --id "${MODPACK_NAME}" \
+   --baseURL "${MODPACK_PUBLIC}/modpack" --id "${MODPACK_NAME}" \
    --out "/mnt/config/www/minecraft/modpack.xml" --path "/mnt/config/www/minecraft/modpack" \
    --mc "${MINECRAFT_VERSION}"${FASTPACK_PARAMS} \
    --revision "$(date +'%F_%H%M')" --autoConnect false
+  sed -i "s/yarn=latest/yarn=${YARN_VERSION}/g" /mnt/config/www/minecraft/modpack.xml
   sed -i 's/+/%2B/g' /mnt/config/www/minecraft/modpack.xml
 fi
