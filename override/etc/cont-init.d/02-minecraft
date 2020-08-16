@@ -255,5 +255,6 @@ if [[ ! -z "${MINECRAFT_VERSION}" ]]; then
    --mc "${MINECRAFT_VERSION}"${FASTPACK_PARAMS} \
    --revision "$(date +'%F_%H%M')" --autoConnect false
   sed -i "s/yarn=latest/yarn=${YARN_VERSION}/g" /mnt/config/www/minecraft/modpack.xml
+  sed -i "s/depends=\"cloth-config\"/depends=\"\"/g" /mnt/config/www/minecraft/modpack.xml
   sed -i 's/+/%2B/g' /mnt/config/www/minecraft/modpack.xml
 fi
