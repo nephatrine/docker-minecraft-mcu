@@ -220,10 +220,10 @@ fi
 
 cd /mnt/config/data/server
 if [[ -d /mnt/config/www/minecraft/modpack/extract ]]; then
-  s6-setuidgid guardian find /mnt/config/www/minecraft/modpack/extract/ -name '*.zip' -exec unzip {} \;
+  s6-setuidgid guardian find /mnt/config/www/minecraft/modpack/extract/ -name '*.zip' -exec unzip -o {} \;
 fi
 if [[ -d /mnt/config/data/modpack/extract ]]; then
-  s6-setuidgid guardian cp -R /mnt/config/data/modpack/extract/ -name '*.zip' -exec unzip {} \;
+  s6-setuidgid guardian cp -R /mnt/config/data/modpack/extract/ -name '*.zip' -exec unzip -o {} \;
 fi
 if [[ ! -f /mnt/config/data/server/eula.txt ]]; then
   s6-setuidgid guardian java ${JAVA_OPTS} -jar server.jar nogui
