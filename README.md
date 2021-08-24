@@ -1,4 +1,4 @@
-[Git](https://code.nephatrine.net/nephatrine/docker-minecraft-mcu) |
+[Git](https://code.nephatrine.net/nephatrine/docker-minecraft-mcu/src/branch/master) |
 [Docker](https://hub.docker.com/r/nephatrine/minecraft-mcu/) |
 [unRAID](https://code.nephatrine.net/nephatrine/unraid-containers)
 
@@ -12,6 +12,9 @@ Edition server and optionally MCUpdater modpack.
 **YOU WILL NEED TO USE A SEPARATE REVERSE PROXY SERVER TO SECURE THIS SERVICE.
 FOR INSTANCE, AN [NGINX](https://nginx.com/) REVERSE PROXY CONTAINER.**
 
+- [Alpine Linux](https://alpinelinux.org/)
+- [Skarnet Software](https://skarnet.org/software/)
+- [S6 Overlay](https://github.com/just-containers/s6-overlay)
 - [Minecraft](https://minecraft.net/)
 - [MCUpdater](https://mcupdater.com/)
 
