@@ -90,6 +90,9 @@ fi
 
 # === Download MCUpdater ===
 
+if [[ -e /mnt/config/bin/MCU-FastPack-latest.jar ]]; then
+  find /mnt/config/www/minecraft/MCU-FastPack-latest.jar -mtime +7 -delete
+fi
 if [[ ! -e /mnt/config/bin/MCU-FastPack-latest.jar ]]; then
   if [[ ! -d /mnt/config/bin ]]; then
     s6-setuidgid guardian mkdir -p /mnt/config/bin
@@ -97,6 +100,9 @@ if [[ ! -e /mnt/config/bin/MCU-FastPack-latest.jar ]]; then
   s6-setuidgid guardian wget -P /mnt/config/bin "https://files.mcupdater.com/MCU-FastPack-latest.jar"
 fi
 
+if [[ -e /mnt/config/www/minecraft/MCUpdater-latest.jar ]]; then
+  find /mnt/config/www/minecraft/MCUpdater-latest.jar -mtime +7 -delete
+fi
 if [[ ! -e /mnt/config/www/minecraft/MCUpdater-latest.jar ]]; then
   if [[ ! -d /mnt/config/www/minecraft ]]; then
     s6-setuidgid guardian mkdir -p /mnt/config/www/minecraft
