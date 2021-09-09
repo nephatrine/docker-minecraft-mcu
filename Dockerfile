@@ -10,4 +10,4 @@ RUN echo "====== INSTALL PACKAGES ======" \
  && rm -rf /var/cache/apk/*
 
 COPY override /
-EXPOSE 25565/tcp
+EXPOSE 25565/tcp 25565/udp
