@@ -5,7 +5,7 @@ while grep -q false eula.txt; do
   sleep 30
 done
 if ! pgrep -f minedock >/dev/null; then
-  s6-setuidgid guardian screen -dmS minedock java ${JAVA_OPTS} -jar server-launcher.jar nogui;
+  s6-setuidgid guardian screen -dmS minedock java -Dlog4j2.formatMsgNoLookups=true ${JAVA_OPTS} -jar server-launcher.jar nogui;
 fi
 sleep 10
 while pgrep -f minedock >/dev/null; do
