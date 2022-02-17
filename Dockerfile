@@ -5,9 +5,9 @@ RUN echo "====== INSTALL PACKAGES ======" \
  && apk add \
    jq \
    libxml2-utils \
-   openjdk8-jre \
+   openjdk17-jre \
    screen \
  && rm -rf /var/cache/apk/*
 
 COPY override /
-EXPOSE 25565/tcp 25565/udp
+EXPOSE 25565/tcp 25566/udp
