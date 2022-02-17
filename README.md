@@ -40,8 +40,7 @@ configuration and further changes may need to be made in the generated
 configuration files.
 
 - ``FABRIC_VERSION``: Fabric Loader Version (*""*)
-- ``FORGE_VERSION``: Minecraft Forge Version (*recommended*)
-- ``MINECRAFT_VERSION``: Minecraft Version (**)
+- ``MINECRAFT_VERSION``: Minecraft Version (*""*)
 - ``JAVA_OPTS``: Java Commandline Arguments (*""*)
 - ``MODPACK_NAME``: Modpack Name (*custom*)
 - ``MODPACK_PUBLIC``: Modpack Download URL (*https://*``[SERVER_PUBLIC]``)
@@ -50,11 +49,6 @@ configuration files.
 - ``SERVER_NAME``: Server Name (*custom*)
 - ``SERVER_PUBLIC``: Server IP/FQDN (*""*)
 - ``TZ``: System Timezone (*America/New_York*)
-
-If a ``MINECRAFT_VERSION`` is specified but neither ``FABRIC_VERSION`` nor
-``FORGE_VERSION`` are specified, it will default to the recommended version of
-Forge for that Minecraft Version. If there is no recommended version of Forge,
-then it will default to the latest Fabric release.
 
 ## Persistent Mounts
 
