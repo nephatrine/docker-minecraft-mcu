@@ -131,19 +131,7 @@ if [[ ! -z "${FABRIC_INSTALLER_VERSION}" ]]; then
     fi
     s6-setuidgid guardian wget -O /mnt/config/bin/fabric-${MINECRAFT_VERSION}-${FABRIC_VERSION}.jar "https://meta.fabricmc.net/v2/versions/loader/${MINECRAFT_VERSION}/${FABRIC_VERSION}/${FABRIC_INSTALLER_VERSION}/server/jar"
   fi
-
-  LOADER_DIRNAME="${MINECRAFT_VERSION}-${FABRIC_VERSION}"
-  if [[ ! -d /mnt/config/data/launcher/${LOADER_DIRNAME} ]]; then
-    s6-setuidgid guardian mkdir -p /mnt/config/data/launcher/${LOADER_DIRNAME}
-    cd /mnt/config/data/launcher/${LOADER_DIRNAME}
-    s6-setuidgid guardian java -jar /mnt/config/bin/fabric-${MINECRAFT_VERSION}-${FABRIC_VERSION}.jar nogui
-  fi
-
-  s6-setuidgid guardian cp -n /mnt/config/data/launcher/${LOADER_DIRNAME}/eula.txt /mnt/config/data/server/
-  s6-setuidgid guardian cp -n /mnt/config/data/launcher/${LOADER_DIRNAME}/server.properties /mnt/config/data/server/
   s6-setuidgid guardian ln -s /mnt/config/bin/fabric-${MINECRAFT_VERSION}-${FABRIC_VERSION}.jar /mnt/config/data/server/server-launcher.jar
-  s6-setuidgid guardian ln -s /mnt/config/data/launcher/${LOADER_DIRNAME}/libraries /mnt/config/data/server/libraries
-  s6-setuidgid guardian ln -s /mnt/config/data/launcher/${LOADER_DIRNAME}/versions /mnt/config/data/server/versions
 fi
 
 # === Create Symlinks ===
