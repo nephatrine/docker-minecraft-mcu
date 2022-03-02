@@ -1,0 +1,272 @@
+#!/command/with-contenv /bin/bash
+
+if /usr/bin/pgrep -f minedock >/dev/null; then
+  exit 1
+fi
+
+SERVER_NAME=${SERVER_NAME:-"custom"}
+MODPACK_NAME=${MODPACK_NAME:-"${SERVER_NAME}"}
+
+if [[ -z "${SERVER_PUBLIC}" ]]; then
+  if [[ -f /mnt/config/tmp/ipify ]]; then
+    /usr/bin/find /mnt/config/tmp/ipify -mtime +1 -delete
+  fi
+  if [[ ! -f /mnt/config/tmp/ipify ]]; then
+    if [[ ! -d /mnt/config/tmp ]]; then
+      /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/tmp 
+    fi
+    /command/s6-setuidgid guardian /usr/bin/wget -q -O /mnt/config/tmp/ipify https://api.ipify.org/ 
+  fi
+  SERVER_PUBLIC=$(/bin/cat /mnt/config/tmp/ipify)
+fi
+MODPACK_PUBLIC=${MODPACK_PUBLIC:-"https://${SERVER_PUBLIC}"}
+
+# === Default Minecraft Version ===
+
+MINECRAFT_VERSION=${MINECRAFT_VERSION:-"release"}
+
+if ! printf "$MINECRAFT_VERSION" | /bin/grep -q [0-9]; then
+  if [[ -f /mnt/config/tmp/minecraft_manifest.json ]]; then
+    /usr/bin/find /mnt/config/tmp/minecraft_manifest.json -mtime +1 -delete
+  fi
+  if [[ ! -f /mnt/config/tmp/minecraft_manifest.json ]]; then
+    if [[ ! -d /mnt/config/tmp ]]; then
+      /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/tmp 
+    fi
+    /command/s6-setuidgid guardian /usr/bin/wget -q -O /mnt/config/tmp/minecraft_manifest.json "https://launchermeta.mojang.com/mc/game/version_manifest.json"
+  fi
+  MINECRAFT_VERSION=$(/usr/bin/jq -r ".latest.${MINECRAFT_VERSION}" /mnt/config/tmp/minecraft_manifest.json)
+fi
+
+# === Default Fabric Installer Version ===
+
+FABRIC_INSTALLER_VERSION=${FABRIC_INSTALLER_VERSION:-"release"}
+
+if ! printf "$FABRIC_INSTALLER_VERSION" | /bin/grep -q [0-9]; then
+  if [[ -f /mnt/config/tmp/fabric-installer.xml ]]; then
+    /usr/bin/find /mnt/config/tmp/fabric-installer.xml -mtime +1 -delete
+  fi
+  if [[ ! -f /mnt/config/tmp/fabric-installer.xml ]]; then
+    if [[ ! -d /mnt/config/tmp ]]; then
+      /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/tmp 
+    fi
+    /command/s6-setuidgid guardian /usr/bin/wget -q -O /mnt/config/tmp/fabric-installer.xml "https://maven.fabricmc.net/net/fabricmc/fabric-installer/maven-metadata.xml"
+  fi
+  FABRIC_INSTALLER_VERSION=$(/usr/bin/xmllint --xpath "metadata/versioning/${FABRIC_INSTALLER_VERSION}/text()" /mnt/config/tmp/fabric-installer.xml)
+fi
+
+# === Default Fabric Loader Version ===
+
+FABRIC_VERSION=${FABRIC_VERSION:-"release"}
+
+if ! printf "$FABRIC_VERSION" | /bin/grep -q [0-9]; then
+  if [[ -f /mnt/config/tmp/fabric-loader.xml ]]; then
+    /usr/bin/find /mnt/config/tmp/fabric-loader.xml -mtime +1 -delete
+  fi
+  if [[ ! -f /mnt/config/tmp/fabric-loader.xml ]]; then
+    if [[ ! -d /mnt/config/tmp ]]; then
+      /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/tmp 
+    fi
+    /command/s6-setuidgid guardian /usr/bin/wget -q -O /mnt/config/tmp/fabric-loader.xml "https://maven.fabricmc.net/net/fabricmc/fabric-loader/maven-metadata.xml"
+  fi
+  FABRIC_VERSION=$(/usr/bin/xmllint --xpath "metadata/versioning/${FABRIC_VERSION}/text()" /mnt/config/tmp/fabric-loader.xml)
+fi
+
+# === Default Yarn Version ===
+
+if [[ -z "${YARN_VERSION}" ]]; then
+  if [[ -f /mnt/config/tmp/yarn_versions.json ]]; then
+    /usr/bin/find /mnt/config/tmp/yarn_versions.json -mtime +1 -delete
+  fi
+  if [[ ! -f /mnt/config/tmp/yarn_versions.json ]]; then
+    if [[ ! -d /mnt/config/tmp ]]; then
+      /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/tmp 
+    fi
+    /command/s6-setuidgid guardian /usr/bin/wget -q -O /mnt/config/tmp/yarn_versions.json "https://maven.fabricmc.net/net/fabricmc/yarn/versions.json"
+  fi
+  YARN_VERSION="${MINECRAFT_VERSION}+build.$(/usr/bin/jq -r --arg ver "$MINECRAFT_VERSION" '.[$ver][-1]' /mnt/config/tmp/yarn_versions.json)"
+fi
+
+# === Download MCUpdater ===
+
+if [[ -f /mnt/config/bin/MCU-FastPack.jar ]]; then
+  /usr/bin/find /mnt/config/bin/MCU-FastPack.jar -mtime +7 -delete
+fi
+if [[ ! -f /mnt/config/bin/MCU-FastPack.jar ]]; then
+  if [[ ! -d /mnt/config/bin ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/bin
+  fi
+  /command/s6-setuidgid guardian /usr/bin/wget -q -O /mnt/config/bin/MCU-FastPack.jar "https://files.mcupdater.com/MCU-FastPack-latest.jar"
+fi
+
+if [[ -f /mnt/config/www/minecraft/MCUpdater.jar ]]; then
+  /usr/bin/find /mnt/config/www/minecraft/MCUpdater.jar -mtime +7 -delete
+fi
+if [[ ! -f /mnt/config/www/minecraft/MCUpdater.jar ]]; then
+  if [[ ! -d /mnt/config/www/minecraft ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/www/minecraft
+  fi
+  /command/s6-setuidgid guardian /usr/bin/wget -q -O /mnt/config/www/minecraft/MCUpdater.jar "https://files.mcupdater.com/MCUpdater-latest.jar"
+fi
+
+if [[ -f /mnt/config/www/minecraft/ServerPack.xsl ]]; then
+  /usr/bin/find /mnt/config/www/minecraft/ServerPack.xsl -mtime +7 -delete
+fi
+if [[ ! -f /mnt/config/www/minecraft/ServerPack.xsl ]]; then
+  if [[ ! -d /mnt/config/www/minecraft ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/www/minecraft
+  fi
+  /command/s6-setuidgid guardian /usr/bin/wget -q -O /mnt/config/www/minecraft/ServerPack.xsl "https://raw.githubusercontent.com/MCUpdater/pack-optional/master/ServerPack.xsl"
+fi
+
+# === Download Fabric Installer ===
+
+if [[ ! -f /mnt/config/bin/fabric-${MINECRAFT_VERSION}-${FABRIC_VERSION}-${FABRIC_INSTALLER_VERSION}.jar ]]; then
+  if [[ ! -d /mnt/config/bin ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/bin
+  fi
+  /command/s6-setuidgid guardian /usr/bin/wget -q -O /mnt/config/bin/fabric-${MINECRAFT_VERSION}-${FABRIC_VERSION}-${FABRIC_INSTALLER_VERSION}.jar "https://meta.fabricmc.net/v2/versions/loader/${MINECRAFT_VERSION}/${FABRIC_VERSION}/${FABRIC_INSTALLER_VERSION}/server/jar"
+fi
+
+# === Create Modpack ===
+
+if [[ ! -d /mnt/config/www/minecraft/modpack ]]; then
+  /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/www/minecraft/modpack
+fi
+
+unset FASTPACK_PARAMS
+
+if [[ ! -z "${FABRIC_VERSION}" ]]; then
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --fabric ${FABRIC_VERSION}"
+fi
+if [[ ! -z "${YARN_VERSION}" ]]; then
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --yarn ${YARN_VERSION}"
+fi
+
+if [[ -f /mnt/config/www/minecraft/index.html ]]; then
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --newsURL ${MODPACK_PUBLIC}/index.html"
+else
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --newsURL ${MODPACK_PUBLIC}/modpack.xml"
+fi
+if [[ -f /mnt/config/www/minecraft/modpack.xsl ]]; then
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --xslt ${MODPACK_PUBLIC}/modpack.xsl"
+elif [[ -f /mnt/config/www/minecraft/ServerPack.xsl ]]; then
+  FASTPACK_PARAMS="${FASTPACK_PARAMS} --xslt ${MODPACK_PUBLIC}/ServerPack.xsl"
+fi
+
+if [[ ! -d /mnt/config/log ]]; then
+  /bin/mkdir -p /mnt/config/log
+fi
+cd /mnt/config/log
+
+export HOME=/mnt/config/home
+/command/s6-setuidgid guardian /usr/bin/java -jar /mnt/config/bin/MCU-FastPack.jar \
+ --mcserver "${SERVER_PUBLIC}" --name "${SERVER_NAME}" \
+ --baseURL "${MODPACK_PUBLIC}/modpack" --id "${MODPACK_NAME}" \
+ --out "/mnt/config/www/minecraft/modpack.xml" --path "/mnt/config/www/minecraft/modpack" \
+ --mc "${MINECRAFT_VERSION}"${FASTPACK_PARAMS} \
+ --revision "$(date +'%F_%H%M')" --autoConnect false
+/command/s6-setuidgid guardian /bin/sed -i 's/+/%2B/g' /mnt/config/www/minecraft/modpack.xml
+
+# === Create Server Directory ===
+
+if [[ ! -d /mnt/config/data/server ]]; then
+  /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/data/server
+fi
+
+if [[ -d /mnt/config/data/server/mods ]]; then
+  /bin/rm -rf /mnt/config/data/server/mods
+fi
+if [[ -d /mnt/config/data/server/scripts ]]; then
+  /bin/rm -rf /mnt/config/data/server/scripts
+fi
+/usr/bin/find /mnt/config/data/server -type l -delete
+
+/command/s6-setuidgid guardian /bin/ln -s /mnt/config/bin/fabric-${MINECRAFT_VERSION}-${FABRIC_VERSION}-${FABRIC_INSTALLER_VERSION}.jar /mnt/config/data/server/server-launcher.jar
+
+# === Copy Mods ===
+
+if [[ -d /mnt/config/www/minecraft/modpack/server ]]; then
+  if [[ ! -d /mnt/config/data/server/mods ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/data/server/mods
+  fi
+  /command/s6-setuidgid guardian /bin/ln -s /mnt/config/www/minecraft/modpack/server/* /mnt/config/data/server/mods/
+fi
+
+if [[ -d /mnt/config/www/minecraft/modpack/mods ]]; then
+  if [[ ! -d /mnt/config/data/server/mods ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/data/server/mods
+  fi
+  /command/s6-setuidgid guardian /bin/ln -s /mnt/config/www/minecraft/modpack/mods/* /mnt/config/data/server/mods/
+fi
+
+if [[ -d /mnt/config/www/minecraft/modpack/optional ]]; then
+  if [[ ! -d /mnt/config/data/server/mods ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/data/server/mods
+  fi
+  /command/s6-setuidgid guardian /bin/ln -s /mnt/config/www/minecraft/modpack/optional/* /mnt/config/data/server/mods/
+fi
+
+if [[ -d /mnt/config/data/modpack/server ]]; then
+  if [[ ! -d /mnt/config/data/server/mods ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/data/server/mods
+  fi
+  /command/s6-setuidgid guardian /bin/ln -s /mnt/config/data/modpack/server/* /mnt/config/data/server/mods/
+fi
+
+if [[ -d /mnt/config/data/modpack/mods ]]; then
+  if [[ ! -d /mnt/config/data/server/mods ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/data/server/mods
+  fi
+  /command/s6-setuidgid guardian /bin/ln -s /mnt/config/data/modpack/mods/* /mnt/config/data/server/mods/
+fi
+
+if [[ -d /mnt/config/data/modpack/optional ]]; then
+  if [[ ! -d /mnt/config/data/server/mods ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/data/server/mods
+  fi
+  /command/s6-setuidgid guardian /bin/ln -s /mnt/config/data/modpack/optional/* /mnt/config/data/server/mods/
+fi
+
+# === Copy Configs ===
+
+if [[ -d /mnt/config/www/minecraft/modpack/config ]]; then
+  if [[ ! -d /mnt/config/data/server/config ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/data/server/config
+  fi
+  /command/s6-setuidgid guardian /bin/cp -R /mnt/config/www/minecraft/modpack/config/* /mnt/config/data/server/config/
+fi
+
+if [[ -d /mnt/config/data/modpack/config ]]; then
+  if [[ ! -d /mnt/config/data/server/config ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/data/server/config
+  fi
+  /command/s6-setuidgid guardian /bin/cp -R /mnt/config/data/modpack/config/* /mnt/config/data/server/config/
+fi
+
+# === Copy Scripts ===
+
+if [[ -d /mnt/config/www/minecraft/modpack/scripts ]]; then
+  if [[ ! -d /mnt/config/data/server/scripts ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/data/server/scripts
+  fi
+  /command/s6-setuidgid guardian /bin/cp -R /mnt/config/www/minecraft/modpack/scripts/* /mnt/config/data/server/scripts/
+fi
+
+if [[ -d /mnt/config/data/modpack/scripts ]]; then
+  if [[ ! -d /mnt/config/data/server/scripts ]]; then
+    /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/data/server/scripts
+  fi
+  /command/s6-setuidgid guardian /bin/cp -R /mnt/config/data/modpack/scripts/* /mnt/config/data/server/scripts/
+fi
+
+# === Extract Zips ===
+
+cd /mnt/config/data/server
+
+if [[ -d /mnt/config/www/minecraft/modpack/extract ]]; then
+  /command/s6-setuidgid guardian /usr/bin/find /mnt/config/www/minecraft/modpack/extract/ -name '*.zip' -exec /usr/bin/unzip -o {} \;
+fi
+if [[ -d /mnt/config/data/modpack/extract ]]; then
+  /command/s6-setuidgid guardian /usr/bin/find /mnt/config/data/modpack/extract/ -name '*.zip' -exec /usr/bin/unzip -o {} \;
+fi

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if /usr/bin/pgrep -f minedock >/dev/null; then
+  /command/s6-setuidgid guardian /usr/bin/screen -S minedock -X stuff "`echo -ne \"say MINECRAFT SERVER SHUTTING DOWN!\r\"`"
+  /command/s6-setuidgid guardian /usr/bin/screen -S minedock -X stuff "`echo -ne \"save-all\r\"`"
+  sleep 6
+  /command/s6-setuidgid guardian /usr/bin/screen -S minedock -X stuff "`echo -ne \"stop\r\"`"
+fi

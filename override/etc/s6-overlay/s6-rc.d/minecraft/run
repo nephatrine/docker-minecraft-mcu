@@ -1,0 +1,28 @@
+#!/command/with-contenv /bin/bash
+
+cd /mnt/config/data/server
+
+if [[ ! -f /mnt/config/data/server/eula.txt ]]; then
+  export HOME=/mnt/config/home
+  /command/s6-setuidgid guardian /usr/bin/java ${JAVA_OPTS} -jar server-launcher.jar nogui
+fi
+while /bin/grep -q false eula.txt; do
+  echo "please accept data/server/eula.txt..."
+  sleep 30
+done
+
+if [[ ! -f /mnt/config/data/server/eula.txt ]]; then
+  exit 1
+fi
+if /bin/grep -q false eula.txt; then
+  exit 1
+fi
+
+if ! /usr/bin/pgrep -f minedock >/dev/null; then
+  export HOME=/mnt/config/home
+  /command/s6-setuidgid guardian /usr/bin/screen -dmS minedock /usr/bin/java -Dlog4j2.formatMsgNoLookups=true ${JAVA_OPTS} -jar server-launcher.jar nogui;
+  sleep 10
+fi
+while /usr/bin/pgrep -f minedock >/dev/null; do
+  sleep 60
+done
