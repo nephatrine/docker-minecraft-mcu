@@ -2,12 +2,11 @@ FROM nephatrine/alpine-s6:latest
 LABEL maintainer="Daniel Wolf <nephatrine@gmail.com>"
 
 RUN echo "====== INSTALL PACKAGES ======" \
- && apk add \
+ && apk add --no-cache \
    jq \
    libxml2-utils \
    openjdk17-jre \
-   screen \
- && rm -rf /var/cache/apk/*
+   screen
 
 COPY override /
 EXPOSE 25565/tcp 25566/udp
