@@ -155,7 +155,7 @@ elif [[ -f /mnt/config/www/minecraft/ServerPack.xsl ]]; then
 fi
 
 if [[ ! -d /mnt/config/log ]]; then
-  /bin/mkdir -p /mnt/config/log
+  /command/s6-setuidgid guardian /bin/mkdir -p /mnt/config/log
 fi
 cd /mnt/config/log
 
