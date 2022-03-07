@@ -21,6 +21,11 @@ fi
 if ! /usr/bin/pgrep -f minedock >/dev/null; then
   export HOME=/mnt/config/home
   /command/s6-setuidgid guardian /usr/bin/screen -dmS minedock /usr/bin/java -Dlog4j2.formatMsgNoLookups=true ${JAVA_OPTS} -jar server-launcher.jar nogui;
+
+  if [[ -f ${HOME}/.screenrc ]]; then
+    /bin/chown guardian:users ${HOME}
+    /bin/chown guardian:users ${HOME}/.screenrc
+  fi
   sleep 10
 fi
 while /usr/bin/pgrep -f minedock >/dev/null; do
