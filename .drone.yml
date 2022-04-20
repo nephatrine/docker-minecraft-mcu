@@ -9,19 +9,36 @@ platform:
 
 steps:
 - name: build
+  environment:
+    PDR_USER:
+      from_secret: docker-user-pdr
+    PDR_PASS:
+      from_secret: docker-pass-pdr
   commands:
-  - docker build --pull -t pdr.nephatrine.net/nephatrine/minecraft-mcu:latest .
-  - HOME=/mnt/config/home docker push pdr.nephatrine.net/nephatrine/minecraft-mcu:latest
+  - docker build -t pdr.nephatrine.net/nephatrine/minecraft-mcu:latest .
+  - docker login -p "$PDR_PASS" -u "$PDR_USER" pdr.nephatrine.net
+  - docker push pdr.nephatrine.net/nephatrine/minecraft-mcu:latest
+  - docker logout pdr.nephatrine.net
+- name: publish
+  environment:
+    DOCKER_USER:
+      from_secret: docker-user
+    DOCKER_PASS:
+      from_secret: docker-pass
+  commands:
   - docker tag pdr.nephatrine.net/nephatrine/minecraft-mcu:latest nephatrine/minecraft-mcu:latest
-  - HOME=/mnt/config/home docker push nephatrine/minecraft-mcu:latest
-  - docker rmi pdr.nephatrine.net/nephatrine/minecraft-mcu:latest
+  - docker login -p "$DOCKER_PASS" -u "$DOCKER_USER"
+  - docker push -a nephatrine/minecraft-mcu
+  - docker logout
+  depends_on:
+  - build
 
 ---
 kind: pipeline
-name: after
+name: notify
 
 steps:
-- name: notify
+- name: notify-status
   image: appleboy/drone-discord
   failure: ignore
   settings:
@@ -43,6 +60,6 @@ trigger:
 
 ---
 kind: signature
-hmac: 15d0b2178d726ebdc8490861f0bc8ef704ae35d31275f07da9143c4f2e40a50f
+hmac: 5c71f54a0f860d64178b2ceb778639b4f26f612e2785b8c87b373cb487da9ee2
 
 ...
