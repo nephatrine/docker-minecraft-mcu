@@ -46,9 +46,9 @@ steps:
     message: "Build of **[{{repo.name}}:{{commit.branch}}](<https://code.nephatrine.net/nephatrine/{{repo.name}}/src/branch/{{commit.branch}}>)** returned [{{build.status}}](<{{build.link}}>)."
     username: DroneCI
     webhook_id:
-      from_secret: wh-minecraft-id
+      from_secret: wh-infra-id
     webhook_token:
-      from_secret: wh-minecraft-tok
+      from_secret: wh-infra-id
 
 depends_on:
 - default
@@ -60,6 +60,6 @@ trigger:
 
 ---
 kind: signature
-hmac: 5c71f54a0f860d64178b2ceb778639b4f26f612e2785b8c87b373cb487da9ee2
+hmac: 523ec8bf4f49d63d04bfca6cf97d631bff5f2b6c97d68e2b47901b4a50a91bc4
 
 ...
