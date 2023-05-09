@@ -9,9 +9,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
       - name: Docker Build
-        run: |
-          docker build --pull -t code.nephatrine.net/nephnet/minecraft-mcu:${{ gitea.ref_name }}-cached --target builder ${{ gitea.workspace }}
-          docker build --pull -t code.nephatrine.net/nephnet/minecraft-mcu:${{ gitea.ref_name }}-amd64 ${{ gitea.workspace }}
+        run: docker build --pull -t code.nephatrine.net/nephnet/minecraft-mcu:${{ gitea.ref_name }}-amd64 ${{ gitea.workspace }}
       - name: Docker Login
         uses: actions/docker-login@v2
         with:
