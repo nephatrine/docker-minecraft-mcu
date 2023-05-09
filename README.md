@@ -1,22 +1,17 @@
-[Git](https://code.nephatrine.net/nephatrine/docker-minecraft-mcu/src/branch/master) |
+[Git](https://code.nephatrine.net/NephNET/docker-minecraft-mcu/src/branch/master) |
 [Docker](https://hub.docker.com/r/nephatrine/minecraft-mcu/) |
 [unRAID](https://code.nephatrine.net/nephatrine/unraid-containers)
-
-[![Build Status](https://ci.nephatrine.net/api/badges/nephatrine/docker-minecraft-mcu/status.svg?ref=refs/heads/master)](https://ci.nephatrine.net/nephatrine/docker-minecraft-mcu)
 
 # Minecraft Server
 
 This docker image contains a Minecraft server to self-host your own Java
 Edition server and optionally MCUpdater modpack.
 
-**YOU WILL NEED TO USE A SEPARATE REVERSE PROXY SERVER TO SECURE THIS SERVICE.
-FOR INSTANCE, AN [NGINX](https://nginx.com/) REVERSE PROXY CONTAINER.**
+To secure this service, we suggest a separate reverse proxy server, such as an
+[NGINX](https://nginx.com/) container.
 
-- [Alpine Linux](https://alpinelinux.org/)
-- [Skarnet Software](https://skarnet.org/software/)
-- [S6 Overlay](https://github.com/just-containers/s6-overlay)
-- [Minecraft](https://minecraft.net/)
-- [MCUpdater](https://mcupdater.com/)
+- [Alpine Linux](https://alpinelinux.org/) w/ [S6 Overlay](https://github.com/just-containers/s6-overlay)
+- [Minecraft](https://minecraft.net/) w/ [MCUpdater](https://mcupdater.com/)
 
 **Please note, you will still need to agree to the EULA the first time you
 start up the server by changing ``eula=false`` to ``eula=true`` in the
@@ -88,4 +83,4 @@ This container runs network services that are intended to be exposed outside
 the container. You can map these to host ports using the ``-p HOST:CONTAINER``
 or ``-p HOST:CONTAINER/PROTOCOL`` syntax.
 
-- ``25565/tcp``: Minecraft Server. This is the game server.
+- ``25565/tcp+udp``: Minecraft Server. This is the game server.
